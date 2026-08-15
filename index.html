@@ -101,6 +101,109 @@
             color: #111;
             cursor: pointer;
             font-family: inherit;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Package Index</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            min-height: 100%;
+            margin: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: grid;
+            place-items: center;
+            padding: 1rem;
+            overflow-x: hidden;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        main {
+            width: 100%;
+            max-width: 700px;
+            min-width: 0;
+            text-align: center;
+            animation: fade-in 0.6s ease-out both;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            margin: 0 0 1rem;
+            font-size: clamp(2rem, 10vw, 4rem);
+            line-height: 1.1;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 0 0 0.75rem;
+            color: #666;
+        }
+
+        .code-box {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            padding: 0.65rem;
+            gap: 0.5rem;
+            border-radius: 10px;
+            background: #f1f1f1;
+            overflow: hidden;
+        }
+
+        .code-box code {
+            display: block;
+            flex: 1 1 auto;
+            width: 0;
+            min-width: 0;
+            max-width: 100%;
+            padding: 0.2rem 0.35rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .copy-btn {
+            flex: 0 0 auto;
+            border: 0;
+            border-radius: 7px;
+            padding: 0.55rem 0.75rem;
+            background: #fff;
+            color: #111;
+            cursor: pointer;
+            font-family: inherit;
             font-weight: 600;
         }
 
@@ -120,12 +223,13 @@
 
         footer a {
             color: inherit;
-            text-decoration: none;
+            text-decoration-line: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 3px;
         }
 
         footer a:hover {
-            color: currentColor;
-            text-decoration: underline;
+            text-decoration-style: solid;
         }
 
         @media (max-width: 480px) {
@@ -206,31 +310,164 @@
         </div>
 
         <footer>
-            <span>Lord H. Hackwell</span>
+            <span>Lord J. Hackwell</span>
             <span> · </span>
-            <a href="https://github.com/lordhck">GitHub</a>
+
+            <a
+                href="https://github.com/lordhck/repo"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                GitHub
+            </a>
+
+            <span> · </span>
+
+            <span>
+                Version
+                <a
+                    id="version"
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    loading...
+                </a>
+            </span>
         </footer>
     </main>
 
     <script>
+        const repo = 'lordhck/repo';
+        const version = document.getElementById('version');
+
+        fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
+            headers: {
+                Accept: 'application/vnd.github+json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch latest commit');
+                }
+
+                return response.json();
+            })
+            .then(commits => {
+                if (!commits.length) {
+                    throw new Error('No commits found');
+                }
+
+                const commit = commits[0];
+                const hash = commit.sha.substring(0, 7);
+
+                version.textContent = hash;
+                version.href = commit.html_url;
+            })
+            .catch(() => {
+                version.textContent = 'unknown';
+                version.removeAttribute('href');
+            });
+
         function copyCommand() {
             const command = document.getElementById('install-command').textContent;
             const button = document.querySelector('.copy-btn');
 
-            navigator.clipboard.writeText(command).then(() => {
-                button.textContent = 'Copied!';
+            navigator.clipboard.writeText(command)
+                .then(() => {
+                    button.textContent = 'Copied!';
 
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                }, 1500);
-            }).catch(() => {
-                button.textContent = 'Failed';
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 1500);
+                })
+                .catch(() => {
+                    button.textContent = 'Failed';
 
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                }, 1500);
-            });
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 1500);
+                });
         }
     </script>
 </body>
 </html>
+            font-weight: 600;
+        }
+
+        .copy-btn:hover {
+            background: #e5e5e5;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.97);
+        }
+
+        footer {
+            margin-top: 2rem;
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: currentColor;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2.25rem;
+            }
+
+            .code-box {
+                padding: 0.5rem;
+            }
+
+            .code-box code {
+                font-size: 0.75rem;
+            }
+
+            .copy-btn {
+                padding: 0.5rem 0.65rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #111;
+                color: #eee;
+            }
+
+            p {
+                color: #aaa;
+            }
+
+            .code-box {
+                background: #1d1d1d;
+            }
+
+            .code-box code {
+                color: #eee;
+            }
+
+            .copy-btn {
+                background: #2a2a2a;
+                color: #eee;
+            }
+
+            .copy-btn:hover {
+                background: #333;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
