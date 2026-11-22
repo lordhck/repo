@@ -1,11 +1,11 @@
-@serial|20261122110316
+@serial|20261122115451
 base|0.1.1|base-0.1.1.tar.xz|1296|eddc09d6ce118b7ecddccf6ff1444d076fe66fb03bb5e67a039e220496683957||Core Linux base system configuration
 bash|5.2.37-r0|bash-5.2.37-r0.tar.xz|414892|19b22296c718cd9316b5eb1ccc1391fe160a9d9dbb88096906f2120a8bfba7cc|busybox-binsh musl readline|The GNU Bourne Again shell (repackaged)
 busybox|1.37.0-r20|busybox-1.37.0-r20.tar.xz|482548|7e46cebfba00f8297abea3d0bc783291f7b2d073f71de4a6399964ecdf80dace|musl|Size optimized toolbox of many common UNIX utilities (repackaged)
 busybox-binsh|1.37.0-r20|busybox-binsh-1.37.0-r20.tar.xz|316|403da7c2050f6c6f6a6b036c0a2584ccd17481128344dd10869c63f626a9115d|busybox|busybox ash /bin/sh (repackaged)
 busybox-static|1.37.0-r20|busybox-static-1.37.0-r20.tar.xz|614532|d6001d5b87b9697d7e96db2d8e77ac0de41aeca23f4d162091e6e14544f50e3a||Statically linked Busybox (repackaged)
 busybox-suid|1.37.0-r20|busybox-suid-1.37.0-r20.tar.xz|2608|16d41ee5815b37aa19fb48cef1d9e0cb3b9acf20cd0609d5f16dc4b4c7d90152|busybox musl|suid binaries of Busybox (repackaged)
-install-scripts|0.2.1|install-scripts-0.2.1.tar.xz|6836|0de3433dde7e619ccc3db9c6786734689d41722f0f5b2378118d52fe63995749|bash|Tools to build and install Core
+install-scripts|0.2.2|install-scripts-0.2.2.tar.xz|6920|76a545d11dd2154e22e3e3832ce38d4d19e368975c45d0ac2fd8c6031921de5a|bash|Tools to build and install Core
 kbd-bkeymaps|2.7.1-r1|kbd-bkeymaps-2.7.1-r1.tar.xz|610332|e96a97a949934944db9818c027cab96f0a082f46ee69de898f922284806707fa||X.org-derived binary keymaps (repackaged)
 libncursesw|6.5_p20250503-r0|libncursesw-6.5_p20250503-r0.tar.xz|146528|0055dd32ae317732edc25324ea429cd4ac90efd09b8008139972f6b051510304|ncurses-terminfo-base musl|Console display library (libncursesw) (repackaged)
 musl|1.2.5-r13|musl-1.2.5-r13.tar.xz|382400|5085db391e2b828cb43db29f6741b383bd2c5d227c457dcd1fcd744eec3a37ce||musl C library (repackaged)
