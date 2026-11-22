@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# Sign packages and keep the Core package repository up to date.
+set -euo pipefail
+
+ROOT="${COREPKGS_ROOT:-/srv/repo}"
+REPO="$ROOT/x86_64"
+PUB="$ROOT/keys/corepkgs.pub"
+KEY="${COREPKGS_SECRETS:-/secrets}/corepkgs.key"
+
+die() { echo "repo: $*" >&2; exit 1; }
+
+usage() {
+    cat <<EOF
+Usage: repo <command>
+
+Sign packages and keep the Core package repository up to date.
+
+Commands:
+  add <pkg>...      Sign packages and add them to the repo
+  remove <name>...  Remove packages from the repo
+  verify            Check INDEX and every package
+  keygen            Create the corepkgs signing key
+EOF
+}
+
+# Ask once and hand it to openssl through the environment.
+unlock() {
+    [[ -f "$KEY" ]] || die "no signing key, run: repo keygen"
+    [[ -f "$PUB" ]] || die "no public key, run: repo keygen"
+    export COREPKGS_PASS=""
+    if grep -q ENCRYPTED "$KEY"; then
+        read -rsp "Passphrase for corepkgs.key: " COREPKGS_PASS </dev/tty
+        echo >&2
+    fi
+    openssl pkey -in "$KEY" -passin env:COREPKGS_PASS -noout 2>/dev/null ||
+        die "wrong passphrase"
+}
+
+sign() {
+    openssl pkeyutl -sign -rawin -inkey "$KEY" -passin env:COREPKGS_PASS -in "$1" -out "$2"
+}
+
+check_sig() {
+    openssl pkeyutl -verify -rawin -pubin -inkey "$PUB" -in "$1" -sigfile "$2" >/dev/null 2>&1
+}
+
+# Print a package's INDEX line: name|version|file|size|sha256|depends|desc
+index_line() {
+    local pkg="$1" key val name="" version="" depends="" desc=""
+    while IFS='=' read -r key val; do
+        case "$key" in
+            name) name="$val" ;;
+            version) version="$val" ;;
+            depends) depends="$val" ;;
+            desc) desc="$val" ;;
+        esac
+    done < <(tar -xJOf "$pkg" .PKGINFO 2>/dev/null) || die "$pkg: no .PKGINFO"
+
+    [[ -n "$name" && -n "$version" ]] || die "$pkg: .PKGINFO needs name and version"
+    [[ "${pkg##*/}" == "$name-$version.tar.xz" ]] || die "$pkg: expected $name-$version.tar.xz"
+    printf '%s|%s|%s|%s|%s|%s|%s\n' "$name" "$version" "${pkg##*/}" \
+        "$(stat -c %s "$pkg")" "$(sha256sum "$pkg" | cut -d' ' -f1)" "$depends" "$desc"
+}
+
+lookup() {
+    awk -F'|' -v n="$1" '$1 == n { print $3 }' "$2"
+}
+
+drop() {
+    awk -F'|' -v n="$1" '$1 != n' "$2" > "$2.new"
+    mv "$2.new" "$2"
+}
+
+# Sort, sign and install a new INDEX.
+write_index() {
+    sort -t'|' -k1,1 -o "$1" "$1"
+    chmod 644 "$1"
+    sign "$1" "$1.sig"
+    mv "$1.sig" "$REPO/INDEX.sig"
+    mv "$1" "$REPO/INDEX"
+}
+
+cmd_add() {
+    (( $# )) || die "usage: repo add <pkg>..."
+    local pkg line name file old
+    for pkg in "$@"; do [[ -f "$pkg" ]] || die "$pkg not found"; done
+    unlock
+    mkdir -p "$REPO"
+    touch "$REPO/INDEX"
+
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    cp "$REPO/INDEX" "$tmp/INDEX"
+
+    for pkg in "$@"; do
+        line="$(index_line "$pkg")"
+        name="${line%%|*}" file="${pkg##*/}"
+        old="$(lookup "$name" "$tmp/INDEX")"
+
+        cp "$pkg" "$tmp/$file"
+        sign "$tmp/$file" "$tmp/$file.sig"
+        drop "$name" "$tmp/INDEX"
+        echo "$line" >> "$tmp/INDEX"
+
+        mv "$tmp/$file" "$tmp/$file.sig" "$REPO/"
+        if [[ -n "$old" && "$old" != "$file" ]]; then
+            rm -f "$REPO/$old" "$REPO/$old.sig"
+        fi
+        echo "added: ${file%.tar.xz}"
+    done
+    write_index "$tmp/INDEX"
+}
+
+cmd_remove() {
+    (( $# )) || die "usage: repo remove <name>..."
+    [[ -f "$REPO/INDEX" ]] || die "the repo is empty"
+    local name file
+    for name in "$@"; do
+        [[ -n "$(lookup "$name" "$REPO/INDEX")" ]] || die "$name is not in the repo"
+    done
+    unlock
+
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    cp "$REPO/INDEX" "$tmp/INDEX"
+    for name in "$@"; do
+        file="$(lookup "$name" "$tmp/INDEX")"
+        drop "$name" "$tmp/INDEX"
+        rm -f "$REPO/$file" "$REPO/$file.sig"
+        echo "removed: $name"
+    done
+    write_index "$tmp/INDEX"
+}
+
+cmd_verify() {
+    [[ -f "$PUB" ]] || die "no public key"
+    [[ -f "$REPO/INDEX" ]] || die "the repo is empty"
+    local name version file size sum depends desc bad=0
+    check_sig "$REPO/INDEX" "$REPO/INDEX.sig" || die "INDEX: BAD signature"
+    while IFS='|' read -r name version file size sum depends desc; do
+        if [[ ! -f "$REPO/$file" ]]; then
+            echo "$file: missing"; bad=1
+        elif [[ "$(sha256sum "$REPO/$file" | cut -d' ' -f1)" != "$sum" ]]; then
+            echo "$file: sha256 does not match INDEX"; bad=1
+        elif ! check_sig "$REPO/$file" "$REPO/$file.sig"; then
+            echo "$file: BAD signature"; bad=1
+        fi
+    done < "$REPO/INDEX"
+    (( ! bad )) || die "verify failed"
+    echo "OK: $(wc -l < "$REPO/INDEX") packages"
+}
+
+cmd_keygen() {
+    [[ ! -e "$KEY" ]] || die "corepkgs.key already exists"
+    local again
+    read -rsp "Enter passphrase: " COREPKGS_PASS </dev/tty; echo >&2
+    read -rsp "Confirm passphrase: " again </dev/tty; echo >&2
+    [[ -n "$COREPKGS_PASS" ]] || die "empty passphrase"
+    [[ "$COREPKGS_PASS" == "$again" ]] || die "passphrases do not match"
+    export COREPKGS_PASS
+
+    mkdir -p "$(dirname "$PUB")"
+    (umask 077 && openssl genpkey -algorithm ed25519 -aes-256-cbc \
+        -pass env:COREPKGS_PASS -out "$KEY")
+    openssl pkey -in "$KEY" -passin env:COREPKGS_PASS -pubout -out "$PUB"
+    printf '\nCreated signing key\n  private  %s\n  public   %s\n' "$KEY" "$PUB"
+}
+
+case "${1:-}" in
+    add) shift; cmd_add "$@" ;;
+    remove) shift; cmd_remove "$@" ;;
+    verify) cmd_verify ;;
+    keygen) cmd_keygen ;;
+    -h|--help) usage ;;
+    *) usage >&2; exit 1 ;;
+esac

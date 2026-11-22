@@ -1,0 +1,13 @@
+services:
+  corepkgs:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: corepkgs
+    volumes:
+      - ./x86_64:/srv/repo/x86_64
+      - ./keys:/srv/repo/keys
+      - ${COREPKGS_SECRETS:-~/.config/corepkgs}:/secrets
+      - ${COREPKGS_PACKAGES:-../packages}:/packages:ro
+    stdin_open: true
+    tty: true
