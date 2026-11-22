@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Core Package Repository</title>
+<link rel="icon" href="static/package.svg" type="image/svg+xml">
+<link rel="stylesheet" href="static/style.css">
+<script>
+var t;try{t=localStorage.getItem("theme")}catch(e){}
+document.documentElement.classList.toggle("dark",t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches));
+</script>
+<script src="static/app.js" defer></script>
+</head>
+<body>
+<header><a href="/" class="brand"><img src="static/package.svg" class="logo" alt="">Core Package Repository</a><span id="arch"></span>
+<label class="toggle"><input type="checkbox" id="dark-mode" aria-label="Dark mode"><span class="slider"></span></label>
+</header>
+<main>
+<section id="list-view">
+<label class="search">
+<input id="q" type="search" placeholder="Search packages..." aria-label="Search packages" autofocus>
+</label>
+<table>
+<thead><tr><th>Package</th><th>Version</th><th class="hide-s">Description</th></tr></thead>
+<tbody id="list"></tbody>
+</table>
+</section>
+<section id="pkg-view" hidden>
+<a href="#" class="back">All packages</a>
+<h1><span id="p-name"></span> <span id="p-ver" class="badge"></span></h1>
+<p id="p-desc" class="desc"></p>
+<div class="term"><code id="d-install"></code><button type="button" id="copy">Copy</button></div>
+<div class="box"><h2>Details</h2><table>
+<tr><td>Architecture</td><td id="d-arch"></td></tr>
+<tr><td>Size</td><td id="d-size"></td></tr>
+<tr><td>SHA-256</td><td class="sum"><code id="d-sum"></code></td></tr>
+<tr><td>Download</td><td><a id="d-file"></a></td></tr>
+</table></div>
+<div class="cols">
+<div class="box"><h2>Depends <span id="n-deps" class="count"></span></h2><ul id="p-deps" class="chips"></ul></div>
+<div class="box"><h2>Required by <span id="n-rdeps" class="count"></span></h2><ul id="p-rdeps" class="chips"></ul></div>
+</div>
+</section>
+<p id="error" class="muted" hidden></p>
+</main>
+<footer>
+<span id="foot"></span>
+<button type="button" id="theme-cycle" title="Switch theme">theme: <span class="theme-value">system</span></button>
+</footer>
+</body>
+</html>
