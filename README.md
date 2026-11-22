@@ -42,7 +42,15 @@ machine.
 
 ## INDEX
 
-One line per package:
+The first line is the serial, the UTC time of the last change:
+
+    @serial|20261122093000
+
+`repo` makes sure it always goes up. Core stores the last serial it saw and
+refuses an INDEX with a lower one, so a mirror cannot hand out an old INDEX
+with a valid signature. Clients skip every line that starts with `@`.
+
+Then one line per package:
 
     name|version|file|size|sha256|depends|desc
 

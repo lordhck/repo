@@ -1,5 +1,7 @@
-// Serve index.html, style.css and app.js from the repo dir, next to INDEX
-// and the *.tar.xz files. INDEX lines: name|version|file|size|sha256|depends|desc
+// index.html is served from the repo root, with static/ and the x86_64/ dir
+// (INDEX and the *.tar.xz files) next to it.
+// INDEX lines: name|version|file|size|sha256|depends|desc
+// Lines starting with @ are metadata, such as @serial|<timestamp>.
 const ARCH = "x86_64";
 
 const $ = (id) => document.getElementById(id);
@@ -54,10 +56,17 @@ function showPkg(p) {
 }
 
 function route() {
-  const p = pkgs.get(new URLSearchParams(location.search).get("pkg"));
-  $("list-view").hidden = !!p;
+  const name = new URLSearchParams(location.search).get("pkg");
+  const p = pkgs.get(name);
+  const missing = !!name && !p;
+  $("list-view").hidden = !!p || missing;
   $("pkg-view").hidden = !p;
+  $("not-found").hidden = !missing;
   if (p) showPkg(p);
+  if (missing) {
+    document.title = "Not found - Core Package Repository";
+    $("nf-name").textContent = name;
+  }
 }
 
 async function main() {
@@ -75,7 +84,7 @@ async function main() {
 
   for (const line of text.split("\n")) {
     const [name, ver, file, size, sum, deps = "", ...desc] = line.split("|");
-    if (!name) continue;
+    if (!name || name.startsWith("@")) continue;
     pkgs.set(name, {
       name, ver, file, sum,
       size: Number(size),

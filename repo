@@ -46,7 +46,9 @@ check_sig() {
 
 # Print a package's INDEX line: name|version|file|size|sha256|depends|desc
 index_line() {
-    local pkg="$1" key val name="" version="" depends="" desc=""
+    local pkg="$1" info key val name="" version="" depends="" desc=""
+    # Capture first: a failing tar inside < <(...) would go unnoticed.
+    info="$(tar -xJOf "$pkg" .PKGINFO 2>/dev/null)" || die "$pkg: no .PKGINFO"
     while IFS='=' read -r key val; do
         case "$key" in
             name) name="$val" ;;
@@ -54,7 +56,7 @@ index_line() {
             depends) depends="$val" ;;
             desc) desc="$val" ;;
         esac
-    done < <(tar -xJOf "$pkg" .PKGINFO 2>/dev/null) || die "$pkg: no .PKGINFO"
+    done <<< "$info"
 
     [[ -n "$name" && -n "$version" ]] || die "$pkg: .PKGINFO needs name and version"
     [[ "${pkg##*/}" == "$name-$version.tar.xz" ]] || die "$pkg: expected $name-$version.tar.xz"
@@ -71,9 +73,19 @@ drop() {
     mv "$2.new" "$2"
 }
 
-# Sort, sign and install a new INDEX.
+# Sort, stamp, sign and install a new INDEX. The first line is
+# @serial|<UTC timestamp>. It always goes up, so core can refuse an older
+# INDEX that still has a valid signature.
 write_index() {
-    sort -t'|' -k1,1 -o "$1" "$1"
+    local old now
+    old="$(awk -F'|' '$1 == "@serial" { print $2 }' "$REPO/INDEX")"
+    now="$(date -u +%Y%m%d%H%M%S)"
+    (( now > ${old:-0} )) || now=$(( old + 1 ))
+    {
+        echo "@serial|$now"
+        awk '!/^@/' "$1" | sort -t'|' -k1,1
+    } > "$1.new"
+    mv "$1.new" "$1"
     chmod 644 "$1"
     sign "$1" "$1.sig"
     mv "$1.sig" "$REPO/INDEX.sig"
@@ -135,9 +147,14 @@ cmd_remove() {
 cmd_verify() {
     [[ -f "$PUB" ]] || die "no public key"
     [[ -f "$REPO/INDEX" ]] || die "the repo is empty"
-    local name version file size sum depends desc bad=0
+    local name version file size sum depends desc serial="" count=0 bad=0
     check_sig "$REPO/INDEX" "$REPO/INDEX.sig" || die "INDEX: BAD signature"
     while IFS='|' read -r name version file size sum depends desc; do
+        if [[ "$name" == @* ]]; then
+            [[ "$name" == @serial ]] && serial="$version"
+            continue
+        fi
+        (( ++count ))
         if [[ ! -f "$REPO/$file" ]]; then
             echo "$file: missing"; bad=1
         elif [[ "$(sha256sum "$REPO/$file" | cut -d' ' -f1)" != "$sum" ]]; then
@@ -146,8 +163,9 @@ cmd_verify() {
             echo "$file: BAD signature"; bad=1
         fi
     done < "$REPO/INDEX"
+    [[ "$serial" =~ ^[0-9]+$ ]] || { echo "INDEX: no @serial line"; bad=1; }
     (( ! bad )) || die "verify failed"
-    echo "OK: $(wc -l < "$REPO/INDEX") packages"
+    echo "OK: $count packages, serial $serial"
 }
 
 cmd_keygen() {
