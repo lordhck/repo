@@ -20,7 +20,7 @@ function el(tag, text, attrs = {}) {
 }
 
 function pkgLink(name) {
-  return el("a", name, { href: "#" + encodeURIComponent(name) });
+  return el("a", name, { href: "?pkg=" + encodeURIComponent(name) });
 }
 
 function fillList(ul, names) {
@@ -54,13 +54,10 @@ function showPkg(p) {
 }
 
 function route() {
-  const name = decodeURIComponent(location.hash.slice(1));
-  const p = pkgs.get(name);
+  const p = pkgs.get(new URLSearchParams(location.search).get("pkg"));
   $("list-view").hidden = !!p;
   $("pkg-view").hidden = !p;
   if (p) showPkg(p);
-  else document.title = "Core Package Repository";
-  scrollTo(0, 0);
 }
 
 async function main() {
@@ -113,9 +110,12 @@ async function main() {
   });
   $("foot").textContent = pkgs.size + (pkgs.size === 1 ? " package" : " packages") + " indexed.";
 
-  addEventListener("hashchange", route);
   route();
 }
+
+// Old links used #name.
+if (location.hash.length > 1)
+  location.replace("?pkg=" + encodeURIComponent(decodeURIComponent(location.hash.slice(1))));
 
 // Theme: "system" = nothing stored, follow the OS
 const THEMES = ["light", "dark", "system"];
