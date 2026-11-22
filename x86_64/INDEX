@@ -1,5 +1,5 @@
-@serial|20261122103403
+@serial|20261122104308
 base|0.1.1|base-0.1.1.tar.xz|1296|eddc09d6ce118b7ecddccf6ff1444d076fe66fb03bb5e67a039e220496683957||Core Linux base system configuration
-install-scripts|0.2.0|install-scripts-0.2.0.tar.xz|6836|f58302e8d6a2bda1667b61998d7ef61890153f42bd631f2a956c9d255bbacc56|bash|Tools to build and install Core
+install-scripts|0.2.1|install-scripts-0.2.1.tar.xz|6836|0de3433dde7e619ccc3db9c6786734689d41722f0f5b2378118d52fe63995749|bash|Tools to build and install Core
 musl|1.2.5-r13|musl-1.2.5-r13.tar.xz|382400|5085db391e2b828cb43db29f6741b383bd2c5d227c457dcd1fcd744eec3a37ce||musl C library (repackaged)
 setup-scripts|0.1.0|setup-scripts-0.1.0.tar.xz|3472|da5819e3ac394304e664046063289bef0d95f4204a41ec3e16bf1d5c307e4df0|bash|Scripts to configure an installed Core
