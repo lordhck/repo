@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - index.html
+      - 404.html
       - static/**
       - CNAME
       - .github/workflows/pages.yml
@@ -20,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Collect website files
-        run: mkdir public && cp -r index.html static CNAME public/
+        run: mkdir public && cp -r index.html 404.html static CNAME public/
 
       # keep_files: x86_64/ on gh-pages is published separately and must survive.
       - uses: peaceiris/actions-gh-pages@v4
