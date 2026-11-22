@@ -1,0 +1,31 @@
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - static/**
+      - CNAME
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect website files
+        run: mkdir public && cp -r index.html static CNAME public/
+
+      # keep_files: x86_64/ on gh-pages is published separately and must survive.
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: public
+          keep_files: true
